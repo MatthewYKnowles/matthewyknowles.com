@@ -1,8 +1,8 @@
-import {Component, ViewChild, OnInit} from '@angular/core';
+import {Component, ViewChild, OnInit, Input} from '@angular/core';
 import {ConnectFourService} from './services/connect-four.service';
 
 @Component({
-  selector: 'app-gameboard',
+  selector: 'app-connect-four',
   templateUrl: 'connect-four.component.html',
   styleUrls: ['connect-four.component.scss'],
   providers: [ConnectFourService]
@@ -13,19 +13,21 @@ export class ConnectFourComponent implements OnInit {
   gameOverState: State;
   state: State;
   @ViewChild('myCanvas') myCanvas: any;
+  @Input() playerOneName: string;
+  @Input() playerTwoName: string;
 
-  constructor(private connectFourService: ConnectFourService) {
+  constructor(private connectFourService: ConnectFourService) {}
+
+  ngOnInit(): void {
     const grid = new Grid();
     this.redsTurnState = new RedsTurnState(this, grid, this.connectFourService);
     this.blacksTurnState = new BlacksTurnState(this, grid, this.connectFourService);
     this.gameOverState = new GameOverState(this, grid, this.connectFourService);
     this.state = this.redsTurnState;
-  }
-
-  ngOnInit(): void {
     this.connectFourService.setContext(this.myCanvas.nativeElement.getContext('2d'));
     this.connectFourService.drawBoard();
   }
+
 
   setState(newState: State) {
     this.state = newState;
@@ -34,6 +36,7 @@ export class ConnectFourComponent implements OnInit {
 
 export interface State {
   border: string;
+  borderColor: string;
   winningPlayer: string;
   isADraw: boolean;
   columnIsFull: boolean;
@@ -48,6 +51,7 @@ class GameOverState implements State {
   isADraw = false;
   winningPlayer = '';
   border: string;
+  borderColor = 'yellow';
   constructor(private gameboardComponent: ConnectFourComponent, private grid: Grid, private connectFourService: ConnectFourService) {
   }
 
@@ -68,6 +72,8 @@ abstract class PlayersTurn implements State {
   protected gameboardComponent: ConnectFourComponent;
   protected connectFourService: ConnectFourService;
   protected grid: Grid;
+  protected playerName: string;
+  borderColor: string;
   newGameText = 'Restart Game';
   columnIsFull: boolean;
   isADraw = false;
@@ -115,7 +121,7 @@ abstract class PlayersTurn implements State {
 
   private setGameOverState() {
     this.gameboardComponent.setState(this.gameboardComponent.gameOverState);
-    this.gameboardComponent.state.winningPlayer = this.playerColor;
+    this.gameboardComponent.state.winningPlayer = this.playerName;
     this.gameboardComponent.state.border = this.border;
     if (this.grid.checkForDraw()) {this.gameboardComponent.state.isADraw = true; }
   }
@@ -132,6 +138,7 @@ abstract class PlayersTurn implements State {
 
 export class RedsTurnState extends PlayersTurn {
   border = '15px solid red';
+  borderColor = 'red';
   playerColor = 'red';
   winningString = 'rrrr';
 
@@ -140,6 +147,7 @@ export class RedsTurnState extends PlayersTurn {
     this.gameboardComponent = gameboardComponent;
     this.grid = grid;
     this.connectFourService = connectFourService;
+    this.playerName = gameboardComponent.playerOneName;
   }
 
   changeTurn(): void {
@@ -150,6 +158,7 @@ export class RedsTurnState extends PlayersTurn {
 
 export class BlacksTurnState extends PlayersTurn {
   border = '15px solid black';
+  borderColor = 'black';
   playerColor = 'black';
   winningString = 'bbbb';
 
@@ -158,6 +167,8 @@ export class BlacksTurnState extends PlayersTurn {
     this.gameboardComponent = gameboardComponent;
     this.grid = grid;
     this.connectFourService = connectFourService;
+    this.playerName = this.gameboardComponent.playerTwoName;
+
   }
 
   changeTurn(): void {
