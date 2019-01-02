@@ -1,5 +1,7 @@
 import {Component, ViewChild, OnInit, Input} from '@angular/core';
 import {ConnectFourService} from './services/connect-four.service';
+import {MatthewyknowlesRestService} from '../../services/matthewyknowles-rest.service';
+import {ConnectFourGameResult} from './connect-four-game.result';
 
 @Component({
   selector: 'app-connect-four',
@@ -15,8 +17,11 @@ export class ConnectFourComponent implements OnInit {
   @ViewChild('myCanvas') myCanvas: any;
   @Input() playerOneName: string;
   @Input() playerTwoName: string;
+  matthewyknowlesService: MatthewyknowlesRestService;
 
-  constructor(private connectFourService: ConnectFourService) {}
+  constructor(matthewyknowlesService: MatthewyknowlesRestService, private connectFourService: ConnectFourService) {
+    this.matthewyknowlesService = matthewyknowlesService;
+  }
 
   ngOnInit(): void {
     const grid = new Grid();
@@ -120,10 +125,20 @@ abstract class PlayersTurn implements State {
   }
 
   private setGameOverState() {
-    this.gameboardComponent.setState(this.gameboardComponent.gameOverState);
-    this.gameboardComponent.state.winningPlayer = this.playerName;
-    this.gameboardComponent.state.border = this.border;
-    if (this.grid.checkForDraw()) {this.gameboardComponent.state.isADraw = true; }
+    console.log('gameOverState');
+    const connectFourGameResult: ConnectFourGameResult = {
+      playerOneName: this.gameboardComponent.playerOneName.toLowerCase(),
+      playerTwoName: this.gameboardComponent.playerTwoName.toLowerCase(),
+      gameResult: this.grid.checkForDraw() ? 'tie' : 'win',
+      winningPlayer: this.grid.checkForDraw() ? 'tie' : this.playerName.toLowerCase()
+    }
+    this.gameboardComponent.matthewyknowlesService.recordConnectFourResult(connectFourGameResult).subscribe((response) => {
+      console.log(response);
+      this.gameboardComponent.setState(this.gameboardComponent.gameOverState);
+      this.gameboardComponent.state.winningPlayer = this.playerName;
+      this.gameboardComponent.state.border = this.border;
+      if (this.grid.checkForDraw()) {this.gameboardComponent.state.isADraw = true; }
+    });
   }
 
   checkStringForWinner(connectedString: string): boolean {
