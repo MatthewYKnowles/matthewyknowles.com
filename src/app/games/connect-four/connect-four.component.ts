@@ -1,7 +1,8 @@
-import {Component, ViewChild, OnInit, Input} from '@angular/core';
+import {Component, Input, OnInit, ViewChild} from '@angular/core';
 import {ConnectFourService} from './services/connect-four.service';
 import {MatthewyknowlesRestService} from '../../services/matthewyknowles-rest.service';
-import {ConnectFourGameResult} from './connect-four-game.result';
+import {ConnectFourGameResult} from './models/connect-four-game.result';
+import {MatchRecord} from './models/match-record';
 
 @Component({
   selector: 'app-connect-four',
@@ -18,6 +19,7 @@ export class ConnectFourComponent implements OnInit {
   @Input() playerOneName: string;
   @Input() playerTwoName: string;
   matthewyknowlesService: MatthewyknowlesRestService;
+  matchRecord: MatchRecord;
 
   constructor(matthewyknowlesService: MatthewyknowlesRestService, private connectFourService: ConnectFourService) {
     this.matthewyknowlesService = matthewyknowlesService;
@@ -46,6 +48,7 @@ export interface State {
   isADraw: boolean;
   columnIsFull: boolean;
   newGameText: string;
+  recordingResult: boolean;
   startNewGame(): void;
   clickOnCanvas(event: MouseEvent): void;
 }
@@ -57,6 +60,7 @@ class GameOverState implements State {
   winningPlayer = '';
   border: string;
   borderColor = 'yellow';
+  recordingResult = false;
   constructor(private gameboardComponent: ConnectFourComponent, private grid: Grid, private connectFourService: ConnectFourService) {
   }
 
@@ -66,6 +70,7 @@ class GameOverState implements State {
     this.winningPlayer = '';
     this.isADraw = false;
     this.gameboardComponent.setState(this.gameboardComponent.redsTurnState);
+    this.gameboardComponent.matchRecord = null;
   }
 
   clickOnCanvas(event: MouseEvent): void {}
@@ -84,6 +89,8 @@ abstract class PlayersTurn implements State {
   isADraw = false;
   winningPlayer = '';
   border: string;
+  recordingResult: boolean;
+
 
   clickOnCanvas(event: MouseEvent) {
     this.columnIsFull = false;
@@ -125,19 +132,20 @@ abstract class PlayersTurn implements State {
   }
 
   private setGameOverState() {
-    console.log('gameOverState');
+    this.gameboardComponent.setState(this.gameboardComponent.gameOverState);
+    this.gameboardComponent.state.recordingResult = true;
+    this.gameboardComponent.state.winningPlayer = this.playerName;
+    this.gameboardComponent.state.border = this.border;
+    if (this.grid.checkForDraw()) {this.gameboardComponent.state.isADraw = true; }
     const connectFourGameResult: ConnectFourGameResult = {
       playerOneName: this.gameboardComponent.playerOneName.toLowerCase(),
       playerTwoName: this.gameboardComponent.playerTwoName.toLowerCase(),
       gameResult: this.grid.checkForDraw() ? 'tie' : 'win',
       winningPlayer: this.grid.checkForDraw() ? 'tie' : this.playerName.toLowerCase()
-    }
+    };
     this.gameboardComponent.matthewyknowlesService.recordConnectFourResult(connectFourGameResult).subscribe((response) => {
-      console.log(response);
-      this.gameboardComponent.setState(this.gameboardComponent.gameOverState);
-      this.gameboardComponent.state.winningPlayer = this.playerName;
-      this.gameboardComponent.state.border = this.border;
-      if (this.grid.checkForDraw()) {this.gameboardComponent.state.isADraw = true; }
+      this.gameboardComponent.matchRecord = response;
+      this.gameboardComponent.state.recordingResult = false;
     });
   }
 
